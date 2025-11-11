@@ -67,6 +67,22 @@
     <string name="clock_nothingdot_name">Ndot</string>
     <string name="clock_nothingdot_description">Nothing dot clock</string>
 
+    <!-- Asimovian Clock -->
+    <string name="clock_asimovian_name">Asimovian</string>
+    <string name="clock_asimovian_description">Retro-futuristic sci-fi design</string>
+
+    <!-- Cabin Sketch Clock -->
+    <string name="clock_cabinsketch_name">Cabin Sketch</string>
+    <string name="clock_cabinsketch_description">Distressed playful design</string>
+
+    <!-- Indie Flower Clock -->
+    <string name="clock_indieflower_name">Indie Flower</string>
+    <string name="clock_indieflower_description">Playful child-like calligraphy</string>
+
+    <!-- Special Elite Clock -->
+    <string name="clock_specialelite_name">Special Elite</string>
+    <string name="clock_specialelite_description">Typewriter styled font</string>
+
     <!-- Skeleton string format for displaying the time in 12-hour format. -->
     <string name="clock_12hr_format">hm</string>
 

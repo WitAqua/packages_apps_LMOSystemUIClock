@@ -36,6 +36,10 @@ const val SFPRO_CLOCK_ID = "SFProClock"
 const val SPACEGAME_CLOCK_ID = "SpaceGameClock"
 const val ACCURATIST_CLOCK_ID = "AccuratistClock"
 const val NOTHINGDOT_CLOCK_ID = "NothingDotClock"
+const val ASIMOVIAN_CLOCK_ID = "AsimovianClock"
+const val CABINSKETCH_CLOCK_ID = "CabinSketchClock"
+const val INDIEFLOWER_CLOCK_ID = "IndieFlowerClock"
+const val SPECIALELITE_CLOCK_ID = "SpecialEliteClock"
 
 val LMO_CLOCKS = listOf(
     ALBERT_SANS_CLOCK_ID,
@@ -55,6 +59,10 @@ val LMO_CLOCKS = listOf(
     SPACEGAME_CLOCK_ID,
     ACCURATIST_CLOCK_ID,
     NOTHINGDOT_CLOCK_ID,
+    ASIMOVIAN_CLOCK_ID,
+    CABINSKETCH_CLOCK_ID,
+    INDIEFLOWER_CLOCK_ID,
+    SPECIALELITE_CLOCK_ID,
 )
 
 @Requires(target = ClockProviderPlugin::class, version = ClockProviderPlugin.VERSION)
