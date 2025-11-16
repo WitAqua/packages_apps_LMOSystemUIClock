@@ -308,7 +308,7 @@ class LMOClockController(
             val wasActive = isActive
             val hasJumped =
                 (fraction == 0f && newFraction == 1f) || (fraction == 1f && newFraction == 0f)
-            isActive = newFraction > fraction
+            isActive = newFraction > 0.5f
             fraction = newFraction
             return Pair(wasActive != isActive, hasJumped)
         }
