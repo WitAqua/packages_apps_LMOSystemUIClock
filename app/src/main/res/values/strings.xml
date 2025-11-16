@@ -36,8 +36,8 @@
     <string name="clock_rubik_gemstones_name">Rubik Gemstones</string>
     <string name="clock_rubik_gemstones_description">Digital Rubik Gemstones</string>
     <!-- Rubik Marker Hatch -->
-    <string name="clock_rubik_market_hatch_name">Rubik Marker Hatch</string>
-    <string name="clock_rubik_market_hatch_description">Digital Rubik Marker Hatch</string>
+    <string name="clock_rubik_marker_hatch_name">Rubik Marker Hatch</string>
+    <string name="clock_rubik_marker_hatch_description">Digital Rubik Marker Hatch</string>
 
     <!-- Subway Clock -->
     <string name="clock_subway_name">Subway</string>
