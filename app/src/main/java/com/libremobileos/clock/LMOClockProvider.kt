@@ -77,12 +77,13 @@ class LMOClockProvider : ClockProviderPlugin {
     override fun getClocks(): List<ClockMetadata> = LMO_CLOCKS.map { ClockMetadata(it) }
 
     override fun createClock(settings: ClockSettings): ClockController {
-        if (!LMO_CLOCKS.contains(settings.clockId)) {
+        val clockId = settings.clockId
+        if (clockId == null || !LMO_CLOCKS.contains(clockId)) {
             throw IllegalArgumentException("${settings.clockId} is unsupported by $TAG")
         }
 
         return LMOClockController(
-            settings.clockId!!,
+            clockId,
             pluginContext,
             sysuiContext,
             LayoutInflater.from(pluginContext),
@@ -94,7 +95,8 @@ class LMOClockProvider : ClockProviderPlugin {
     }
 
     override fun getClockPickerConfig(settings: ClockSettings): ClockPickerConfig {
-        if (!LMO_CLOCKS.contains(settings.clockId) || !this::pluginContext.isInitialized) {
+        val clockId = settings.clockId
+        if (clockId == null || !LMO_CLOCKS.contains(clockId) || !this::pluginContext.isInitialized) {
             throw IllegalArgumentException("${settings.clockId} is unsupported by $TAG")
         }
 
@@ -108,7 +110,7 @@ class LMOClockProvider : ClockProviderPlugin {
         //       with proper clock names and description.
         //       right now, plugin is broken when using plugin resources.
         return ClockPickerConfig(
-            settings.clockId.toString(),
+            clockId,
             "Default clock",
             "Default clock description",
             // TODO(b/352049256): Update placeholder to actual resource

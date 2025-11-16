@@ -87,7 +87,7 @@ constructor(
 
     private var translateForCenterAnimation = false
     private val parentWidth: Int
-        get() = (parent as View).measuredWidth
+        get() = (parent as? View)?.measuredWidth ?: 0
 
     // last text size which is not constrained by view height
     private var lastUnconstrainedTextSize: Float = Float.MAX_VALUE
@@ -370,7 +370,8 @@ constructor(
 
     fun animateCharge(isDozing: () -> Boolean) {
         // Skip charge animation if dozing animation is already playing.
-        if (textAnimator == null || textAnimator!!.isRunning) {
+        val animator = textAnimator ?: return
+        if (animator.isRunning) {
             return
         }
 
@@ -633,7 +634,7 @@ constructor(
     }
 
     companion object {
-        private val TAG = AnimatableClockView::class.simpleName!!
+        private val TAG = AnimatableClockView::class.simpleName ?: "AnimatableClockView"
         private val DEFAULT_LOGGER = ClockLogger(null, LogcatOnlyMessageBuffer(LogLevel.DEBUG), TAG)
 
         const val ANIMATION_DURATION_FOLD_TO_AOD: Int = 600
