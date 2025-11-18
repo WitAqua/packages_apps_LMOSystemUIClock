@@ -758,6 +758,7 @@ constructor(
                 CABINSKETCH_CLOCK_ID -> R.font.cabinsketch
                 INDIEFLOWER_CLOCK_ID -> R.font.indieflower
                 SPECIALELITE_CLOCK_ID -> R.font.specialelite
+                DEADJIM_CLOCK_ID -> R.font.deadjim
                 else -> R.font.modak // Default fallback
             }
         }

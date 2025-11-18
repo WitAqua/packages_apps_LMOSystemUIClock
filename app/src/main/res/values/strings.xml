@@ -83,6 +83,10 @@
     <string name="clock_specialelite_name">Special Elite</string>
     <string name="clock_specialelite_description">Typewriter styled font</string>
 
+    <!-- Dead Jim Clock -->
+    <string name="clock_deadjim_name">He\'s Dead Jim</string>
+    <string name="clock_deadjim_description">Star Trek styled font</string>
+
     <!-- Skeleton string format for displaying the time in 12-hour format. -->
     <string name="clock_12hr_format">hm</string>
 

@@ -334,6 +334,7 @@ class LMOClockController(
             CABINSKETCH_CLOCK_ID -> ctx.getString(R.string.clock_cabinsketch_name)
             INDIEFLOWER_CLOCK_ID -> ctx.getString(R.string.clock_indieflower_name)
             SPECIALELITE_CLOCK_ID -> ctx.getString(R.string.clock_specialelite_name)
+            DEADJIM_CLOCK_ID -> ctx.getString(R.string.clock_deadjim_name)
             else -> ""
         }
     }
@@ -361,6 +362,7 @@ class LMOClockController(
             CABINSKETCH_CLOCK_ID -> ctx.getString(R.string.clock_cabinsketch_description)
             INDIEFLOWER_CLOCK_ID -> ctx.getString(R.string.clock_indieflower_description)
             SPECIALELITE_CLOCK_ID -> ctx.getString(R.string.clock_specialelite_description)
+            DEADJIM_CLOCK_ID -> ctx.getString(R.string.clock_deadjim_description)
             else -> ""
         }
     }
