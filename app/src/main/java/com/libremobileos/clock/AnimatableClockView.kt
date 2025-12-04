@@ -31,11 +31,9 @@ import com.android.systemui.animation.GlyphCallback
 import com.android.systemui.animation.TextAnimator
 import com.android.systemui.animation.TextAnimatorListener
 import com.android.systemui.animation.TypefaceVariantCacheImpl
+import com.android.systemui.log.LogcatOnlyMessageBuffer
 import com.android.systemui.log.core.LogLevel
-import com.android.systemui.log.core.LogcatOnlyMessageBuffer
 import com.android.systemui.log.core.MessageBuffer
-import com.android.systemui.plugins.clocks.ClockLogger
-import com.android.systemui.plugins.clocks.ClockLogger.Companion.escapeTime
 import java.io.PrintWriter
 import java.util.Calendar
 import java.util.Locale
@@ -187,7 +185,7 @@ constructor(
         time.timeInMillis = timeOverrideInMillis ?: System.currentTimeMillis()
         contentDescription = DateFormat.format(descFormat, time)
         val formattedText = DateFormat.format(format, time)
-        logger.d({ "refreshTime: new formattedText=${escapeTime(str1)}" }) {
+        logger.d({ "refreshTime: new formattedText=${ClockLogger.escapeTime(str1)}" }) {
             str1 = formattedText?.toString()
         }
 
@@ -199,7 +197,7 @@ constructor(
         }
 
         text = formattedText
-        logger.d({ "refreshTime: done setting new time text to: ${escapeTime(str1)}" }) {
+        logger.d({ "refreshTime: done setting new time text to: ${ClockLogger.escapeTime(str1)}" }) {
             str1 = formattedText?.toString()
         }
 
@@ -284,7 +282,7 @@ constructor(
         lengthBefore: Int,
         lengthAfter: Int,
     ) {
-        logger.d({ "onTextChanged(${escapeTime(str1)})" }) { str1 = "$text" }
+        logger.d({ "onTextChanged(${ClockLogger.escapeTime(str1)})" }) { str1 = "$text" }
         super.onTextChanged(text, start, lengthBefore, lengthAfter)
     }
 
@@ -489,7 +487,7 @@ constructor(
                 isSingleLineInternal && !use24HourFormat -> Patterns.sClockView12
                 else -> DOUBLE_LINE_FORMAT_12_HOUR
             }
-        logger.d({ "refreshFormat(${escapeTime(str1)})" }) { str1 = format?.toString() }
+        logger.d({ "refreshFormat(${ClockLogger.escapeTime(str1)})" }) { str1 = format?.toString() }
 
         descFormat = if (use24HourFormat) Patterns.sClockView24 else Patterns.sClockView12
         refreshTime()

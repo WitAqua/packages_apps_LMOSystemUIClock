@@ -17,22 +17,23 @@ import com.android.systemui.log.core.MessageBuffer
 import com.android.systemui.plugins.clocks.AlarmData
 import com.android.systemui.plugins.clocks.ClockAnimations
 import com.android.systemui.plugins.clocks.ClockAxisStyle
+import com.android.systemui.plugins.clocks.ClockPositionAnimationArgs
 import com.android.systemui.plugins.clocks.ClockConfig
 import com.android.systemui.plugins.clocks.ClockController
 import com.android.systemui.plugins.clocks.ClockEventListener
 import com.android.systemui.plugins.clocks.ClockEvents
+import com.android.systemui.plugins.clocks.ClockEventListeners
 import com.android.systemui.plugins.clocks.ClockFaceConfig
 import com.android.systemui.plugins.clocks.ClockFaceController
 import com.android.systemui.plugins.clocks.ClockFaceEvents
 import com.android.systemui.plugins.clocks.ClockMessageBuffers
 import com.android.systemui.plugins.clocks.ClockSettings
-import com.android.systemui.plugins.clocks.DefaultClockFaceLayout
 import com.android.systemui.plugins.clocks.ThemeConfig
+import com.android.systemui.plugins.clocks.TimeFormatKind
 import com.android.systemui.plugins.clocks.WeatherData
 import com.android.systemui.plugins.clocks.ZenData
 import java.io.PrintWriter
 import java.util.Locale
-import java.util.TimeZone
 
 /**
  * Controls the default clock visuals.
@@ -63,6 +64,7 @@ class LMOClockController(
     }
 
     override val events: DefaultClockEvents
+    override val eventListeners = ClockEventListeners()
     override val config: ClockConfig by lazy {
         ClockConfig(
             clockId,
@@ -99,7 +101,6 @@ class LMOClockController(
         isDarkTheme: Boolean,
         dozeFraction: Float,
         foldFraction: Float,
-        clockListener: ClockEventListener?,
     ) {
         largeClock.recomputePadding(null)
 
@@ -108,7 +109,7 @@ class LMOClockController(
 
         largeClock.events.onThemeChanged(largeClock.theme.copy(isDarkTheme = isDarkTheme))
         smallClock.events.onThemeChanged(smallClock.theme.copy(isDarkTheme = isDarkTheme))
-        events.onTimeZoneChanged(TimeZone.getDefault())
+        events.onTimeZoneChanged(android.icu.util.TimeZone.getDefault())
 
         smallClock.events.onTimeTick()
         largeClock.events.onTimeTick()
@@ -125,11 +126,7 @@ class LMOClockController(
 
         override val config = ClockFaceConfig()
         override var theme = ThemeConfig(true, seedColor)
-        override val layout =
-            DefaultClockFaceLayout(view).apply {
-                views[0].id =
-                    sysuiResources.getIdentifier("lockscreen_clock_view", "id", sysuiCtx.packageName)
-            }
+        override val layout = SimpleClockFaceLayout(view, false)
 
         override var animations: DefaultClockAnimations = DefaultClockAnimations(view, 0f, 0f)
             internal set
@@ -179,11 +176,7 @@ class LMOClockController(
         seedColor: Int?,
         messageBuffer: MessageBuffer?,
     ) : DefaultClockFaceController(view, seedColor, messageBuffer) {
-        override val layout =
-            DefaultClockFaceLayout(view).apply {
-                views[0].id =
-                    sysuiResources.getIdentifier("lockscreen_clock_view_large", "id", sysuiCtx.packageName)
-            }
+        override val layout = SimpleClockFaceLayout(view, true)
         override val config = ClockFaceConfig(hasCustomPositionUpdatedAnimation = true)
 
         init {
@@ -206,11 +199,13 @@ class LMOClockController(
     inner class DefaultClockEvents : ClockEvents {
         override var isReactiveTouchInteractionEnabled: Boolean = false
 
-        override fun onTimeFormatChanged(is24Hr: Boolean) =
-            clocks.forEach { it.refreshFormat(is24Hr) }
+        override fun onTimeFormatChanged(formatKind: TimeFormatKind) =
+            clocks.forEach { it.refreshFormat(formatKind == TimeFormatKind.FULL_DAY) }
 
-        override fun onTimeZoneChanged(timeZone: TimeZone) =
-            clocks.forEach { it.onTimeZoneChanged(timeZone) }
+        override fun onTimeZoneChanged(timeZone: android.icu.util.TimeZone) {
+            val legacyTimezone = java.util.TimeZone.getTimeZone(timeZone.id)
+            clocks.forEach { it.onTimeZoneChanged(legacyTimezone) }
+        }
 
         override fun onLocaleChanged(locale: Locale) {
             val nf = NumberFormat.getInstance(locale)
@@ -275,9 +270,7 @@ class LMOClockController(
             view.translationY = 0.5f * view.bottom * (1 - swipingFraction)
         }
 
-        override fun onPositionUpdated(fromLeft: Int, direction: Int, fraction: Float) {}
-
-        override fun onPositionUpdated(distance: Float, fraction: Float) {}
+        override fun onPositionAnimated(args: ClockPositionAnimationArgs) {}
 
         override fun onFidgetTap(x: Float, y: Float) {}
 
@@ -289,12 +282,8 @@ class LMOClockController(
         dozeFraction: Float,
         foldFraction: Float,
     ) : DefaultClockAnimations(view, dozeFraction, foldFraction) {
-        override fun onPositionUpdated(fromLeft: Int, direction: Int, fraction: Float) {
-            largeClock.offsetGlyphsForStepClockAnimation(fromLeft, direction, fraction)
-        }
-
-        override fun onPositionUpdated(distance: Float, fraction: Float) {
-            largeClock.offsetGlyphsForStepClockAnimation(distance, fraction)
+        override fun onPositionAnimated(args: ClockPositionAnimationArgs) {
+            largeClock.offsetGlyphsForStepClockAnimation(args.fromLeft, args.direction, args.fraction)
         }
     }
 

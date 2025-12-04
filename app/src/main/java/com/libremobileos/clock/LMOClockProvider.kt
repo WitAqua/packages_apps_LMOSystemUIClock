@@ -84,7 +84,7 @@ class LMOClockProvider : ClockProviderPlugin {
 
     override fun getClocks(): List<ClockMetadata> = LMO_CLOCKS.map { ClockMetadata(it) }
 
-    override fun createClock(settings: ClockSettings): ClockController {
+    override fun createClock(ctx: Context, settings: ClockSettings): ClockController? {
         val clockId = settings.clockId
         if (clockId == null || !LMO_CLOCKS.contains(clockId)) {
             throw IllegalArgumentException("${settings.clockId} is unsupported by $TAG")
