@@ -1,12 +1,20 @@
 /*
  * SPDX-FileCopyrightText: 2022 The Android Open Source Project
  * SPDX-FileCopyrightText: 2024-2025 The LibreMobileOS Foundation
+ * SPDX-FileCopyrightText: 2025 DerpFest AOSP
  * SPDX-License-Identifier: Apache-2.0
  */
 
 package com.libremobileos.clock
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Typeface
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import android.text.TextPaint
 import android.view.LayoutInflater
 import androidx.core.content.res.ResourcesCompat
 import com.android.systemui.plugins.annotations.Requires
@@ -108,11 +116,7 @@ class LMOClockProvider : ClockProviderPlugin {
             throw IllegalArgumentException("${settings.clockId} is unsupported by $TAG")
         }
 
-        val thumbnail = ResourcesCompat.getDrawable(
-            pluginContext.resources,
-            R.drawable.clock_default_thumbnail,
-            null
-        ) ?: throw NullPointerException("Default thumbnail is null") // not so important but just in case
+        val thumbnail = generateThumbnail(clockId, pluginContext)
 
         // TODO: Check where it's used and fix it correctly
         //       with proper clock names and description.
@@ -121,11 +125,78 @@ class LMOClockProvider : ClockProviderPlugin {
             clockId,
             "Default clock",
             "Default clock description",
-            // TODO(b/352049256): Update placeholder to actual resource
             thumbnail,
             isReactiveToTone = true,
             axes = emptyList(),
             presetConfig = null,
         )
+    }
+
+    private fun generateThumbnail(clockId: String, context: Context): Drawable {
+        val width = 144
+        val height = 200
+        val density = context.resources.displayMetrics.density
+        val scaledWidth = (width * density).toInt()
+        val scaledHeight = (height * density).toInt()
+
+        val bitmap = Bitmap.createBitmap(scaledWidth, scaledHeight, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        canvas.drawColor(0x00000000)
+
+        val fontResId = selectFont(clockId)
+        val typeface = ResourcesCompat.getFont(context, fontResId) ?: Typeface.DEFAULT
+
+        val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.typeface = typeface
+            textSize = 96f * density
+            color = 0xFFFFFFFF.toInt()
+            textAlign = Paint.Align.CENTER
+        }
+
+        val clockText = "12\n34"
+        val textWidth = textPaint.measureText("12")
+        val textHeight = textPaint.descent() - textPaint.ascent()
+        
+        val x = scaledWidth / 2f
+        val y = (scaledHeight / 2f) + (textHeight / 2f) - textPaint.descent()
+
+        val lines = clockText.split("\n")
+        val lineHeight = textHeight * 0.7f
+        var currentY = y - (lines.size - 1) * lineHeight / 2f
+        
+        for (line in lines) {
+            canvas.drawText(line, x, currentY, textPaint)
+            currentY += lineHeight
+        }
+
+        return BitmapDrawable(context.resources, bitmap)
+    }
+
+    private fun selectFont(clockId: String): Int {
+        return when(clockId) {
+            ALBERT_SANS_CLOCK_ID -> R.font.albertsans
+            BLAKA_CLOCK_ID -> R.font.blaka
+            CREEPSTER_CLOCK_ID -> R.font.creepster
+            KABLAMMO_CLOCK_ID -> R.font.kablammo
+            MODAK_CLOCK_ID -> R.font.modak
+            MYSTERY_QUEST_CLOCK_ID -> R.font.mysteryquest
+            RUBIK_DIRT_CLOCK_ID -> R.font.rubikdirt
+            RUBIK_DISTRESSED_CLOCK_ID -> R.font.rubikdistressed
+            RUBIK_GEMSTONES_CLOCK_ID -> R.font.rubikgemstones
+            RUBIK_MARKER_HATCH_CLOCK_ID -> R.font.rubikmarkerhatch
+            SUBWAY_CLOCK_ID -> R.font.subway
+            RIDGE_CLOCK_ID -> R.font.ridge
+            BEAUTY_CLOCK_ID -> R.font.beauty
+            SFPRO_CLOCK_ID -> R.font.sfpro_semibold_rounded
+            SPACEGAME_CLOCK_ID -> R.font.spacegame
+            ACCURATIST_CLOCK_ID -> R.font.accuratist
+            NOTHINGDOT_CLOCK_ID -> R.font.nothingdot
+            ASIMOVIAN_CLOCK_ID -> R.font.asimovian
+            CABINSKETCH_CLOCK_ID -> R.font.cabinsketch
+            INDIEFLOWER_CLOCK_ID -> R.font.indieflower
+            SPECIALELITE_CLOCK_ID -> R.font.specialelite
+            else -> R.font.modak
+        }
     }
 }
