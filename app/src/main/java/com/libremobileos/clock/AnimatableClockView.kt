@@ -82,6 +82,8 @@ constructor(
     private var chargeAnimationDelay: Int
     private var textAnimator: TextAnimator? = null
     private var onTextAnimatorInitialized: ((TextAnimator) -> Unit)? = null
+    private var lastTextForAnimator: CharSequence? = null
+    private var lastTextSize: Float = 0f
 
     private var translateForCenterAnimation = false
     private val parentWidth: Int
@@ -208,6 +210,11 @@ constructor(
         if (layout != null) {
             textAnimator?.updateLayout(layout)
             logger.d("refreshTime: done updating textAnimator layout")
+            lastTextForAnimator = formattedText
+            lastTextSize = textSize
+        } else {
+            // Reset text tracking so onMeasure() will update the textAnimator when layout becomes available
+            lastTextForAnimator = null
         }
 
         requestLayout()
@@ -236,13 +243,23 @@ constructor(
         }
 
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        textAnimator?.let { animator -> animator.updateLayout(layout, textSize) }
+        textAnimator?.let { animator ->
+            // Only update layout if text content or text size actually changed to avoid unnecessary invalidates
+            val currentText = text
+            if (!TextUtils.equals(currentText, lastTextForAnimator) || textSize != lastTextSize) {
+                animator.updateLayout(layout, textSize)
+                lastTextForAnimator = currentText
+                lastTextSize = textSize
+            }
+        }
             ?: run {
                 textAnimator =
                     textAnimatorFactory(layout, ::invalidate).also {
                         onTextAnimatorInitialized?.invoke(it)
                         onTextAnimatorInitialized = null
                     }
+                lastTextForAnimator = text
+                lastTextSize = textSize
             }
 
         if (hasCustomPositionUpdatedAnimation) {
