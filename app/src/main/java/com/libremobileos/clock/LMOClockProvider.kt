@@ -18,12 +18,12 @@ import android.text.TextPaint
 import android.view.LayoutInflater
 import androidx.core.content.res.ResourcesCompat
 import com.android.systemui.plugins.annotations.Requires
-import com.android.systemui.plugins.clocks.ClockController
-import com.android.systemui.plugins.clocks.ClockMessageBuffers
-import com.android.systemui.plugins.clocks.ClockMetadata
-import com.android.systemui.plugins.clocks.ClockPickerConfig
-import com.android.systemui.plugins.clocks.ClockProviderPlugin
-import com.android.systemui.plugins.clocks.ClockSettings
+import com.android.systemui.plugins.keyguard.ui.clocks.ClockController
+import com.android.systemui.plugins.keyguard.ui.clocks.ClockMessageBuffers
+import com.android.systemui.plugins.keyguard.ui.clocks.ClockMetadata
+import com.android.systemui.plugins.keyguard.ui.clocks.ClockPickerConfig
+import com.android.systemui.plugins.keyguard.ui.clocks.ClockProviderPlugin
+import com.android.systemui.plugins.keyguard.ui.clocks.ClockSettings
 
 private val TAG = LMOClockProvider::class.simpleName
 
@@ -122,10 +122,10 @@ class LMOClockProvider : ClockProviderPlugin {
         //       with proper clock names and description.
         //       right now, plugin is broken when using plugin resources.
         return ClockPickerConfig(
-            clockId,
-            "Default clock",
-            "Default clock description",
-            thumbnail,
+            id = clockId,
+            name = "Default clock",
+            description = "Default clock description",
+            thumbnail = thumbnail,
             isReactiveToTone = true,
             axes = emptyList(),
             presetConfig = null,

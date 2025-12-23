@@ -13,10 +13,11 @@ import androidx.constraintlayout.widget.ConstraintSet.PARENT_ID
 import androidx.constraintlayout.widget.ConstraintSet.START
 import androidx.constraintlayout.widget.ConstraintSet.TOP
 import androidx.constraintlayout.widget.ConstraintSet.WRAP_CONTENT
-import com.android.systemui.plugins.clocks.AodClockBurnInModel
-import com.android.systemui.plugins.clocks.ClockFaceLayout
-import com.android.systemui.plugins.clocks.ClockPreviewConfig
-import com.android.systemui.plugins.clocks.ClockViewIds
+import com.android.systemui.plugins.keyguard.ui.clocks.AodClockBurnInModel
+import com.android.systemui.plugins.keyguard.ui.clocks.ClockFaceLayout
+import com.android.systemui.plugins.keyguard.ui.clocks.ClockPreviewConfig
+import com.android.systemui.plugins.keyguard.ui.clocks.ClockViewIds
+import com.android.systemui.plugins.keyguard.ui.composable.elements.BaseLockscreenElement
 
 class SimpleClockFaceLayout(
     private val view: View,
@@ -33,6 +34,8 @@ class SimpleClockFaceLayout(
     }
 
     override val views: List<View> = listOf(view)
+
+    override val elements: List<BaseLockscreenElement> = emptyList()
 
     override fun applyConstraints(constraints: ConstraintSet): ConstraintSet {
         view.id = viewId
