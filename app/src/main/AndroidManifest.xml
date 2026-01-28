@@ -15,7 +15,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true">
         <service android:name="com.libremobileos.clock.LMOClockProvider"
-            android:exported="false"
+            android:exported="true"
             android:directBootAware="true"
             tools:ignore="Instantiatable">
             <intent-filter>
