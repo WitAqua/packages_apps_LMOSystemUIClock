@@ -1,6 +1,7 @@
 /*
  * SPDX-FileCopyrightText: 2022 The Android Open Source Project
  * SPDX-FileCopyrightText: 2024-2025 The LibreMobileOS Foundation
+ * SPDX-FileCopyrightText: DerpFest AOSP
  * SPDX-License-Identifier: Apache-2.0
  */
 package com.libremobileos.clock
@@ -8,19 +9,18 @@ package com.libremobileos.clock
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.Color
-import android.graphics.Rect
 import android.icu.text.NumberFormat
 import android.util.TypedValue
 import android.view.LayoutInflater
 import androidx.annotation.VisibleForTesting
 import com.android.systemui.log.core.MessageBuffer
+import com.android.systemui.plugins.keyguard.VRect
 import com.android.systemui.plugins.keyguard.data.model.AlarmData
 import com.android.systemui.plugins.keyguard.ui.clocks.ClockAnimations
 import com.android.systemui.plugins.keyguard.ui.clocks.ClockAxisStyle
 import com.android.systemui.plugins.keyguard.ui.clocks.ClockPositionAnimationArgs
 import com.android.systemui.plugins.keyguard.ui.clocks.ClockConfig
 import com.android.systemui.plugins.keyguard.ui.clocks.ClockController
-import com.android.systemui.plugins.keyguard.ui.clocks.ClockEventListener
 import com.android.systemui.plugins.keyguard.ui.clocks.ClockEvents
 import com.android.systemui.plugins.keyguard.ui.clocks.ClockEventListeners
 import com.android.systemui.plugins.keyguard.ui.clocks.ClockFaceConfig
@@ -60,7 +60,7 @@ class LMOClockController(
     private val burmeseLineSpacing =
         resources.getFloat(R.dimen.keyguard_clock_line_spacing_scale_burmese)
     private val defaultLineSpacing by lazy {
-        resources.getFloat(AnimatableClockView.getLineSpaceByClockId(clockId))
+        resources.getFloat(LMOClockCatalog.lineSpacing(clockId))
     }
 
     override val events: DefaultClockEvents
@@ -68,25 +68,20 @@ class LMOClockController(
     override val config: ClockConfig by lazy {
         ClockConfig(
             id = clockId,
-            name = getClockName(),
-            description = getClockDescription(),
+            name = LMOClockCatalog.name(ctx, clockId),
+            description = LMOClockCatalog.description(ctx, clockId),
         )
     }
 
     init {
-        // val parent = FrameLayout(ctx)
         smallClock =
             DefaultClockFaceController(
-                // layoutInflater.inflate(R.layout.lmo_clock_small, parent, false)
-                //       as AnimatableClockView,
                 AnimatableClockView.getSmallClockView(ctx, clockId),
                 settings?.seedColor,
                 messageBuffers?.smallClockMessageBuffer,
             )
         largeClock =
             LargeClockFaceController(
-                // layoutInflater.inflate(R.layout.lmo_clock_large, parent, false)
-                //        as AnimatableClockView,
                 AnimatableClockView.getLargeClockView(ctx, clockId),
                 settings?.seedColor,
                 messageBuffers?.largeClockMessageBuffer,
@@ -102,7 +97,7 @@ class LMOClockController(
         dozeFraction: Float,
         foldFraction: Float,
     ) {
-        largeClock.recomputePadding(null)
+        largeClock.recomputePadding(VRect.ZERO)
 
         largeClock.animations = LargeClockAnimations(largeClock.view, dozeFraction, foldFraction)
         smallClock.animations = DefaultClockAnimations(smallClock.view, dozeFraction, foldFraction)
@@ -122,7 +117,7 @@ class LMOClockController(
     ) : ClockFaceController {
         // MAGENTA is a placeholder, and will be assigned correctly in initialize
         private var currentColor = seedColor ?: Color.MAGENTA
-        protected var targetRegion: Rect? = null
+        protected var targetRegion: VRect = VRect.ZERO
 
         override val config = ClockFaceConfig()
         override var theme = ThemeConfig(true, seedColor)
@@ -155,7 +150,7 @@ class LMOClockController(
                     }
                 }
 
-                override fun onTargetRegionChanged(targetRegion: Rect?) {
+                override fun onTargetRegionChanged(targetRegion: VRect) {
                     this@DefaultClockFaceController.targetRegion = targetRegion
                     recomputePadding(targetRegion)
                 }
@@ -168,7 +163,7 @@ class LMOClockController(
                 override fun onSecondaryDisplayChanged(onSecondaryDisplay: Boolean) {}
             }
 
-        open fun recomputePadding(targetRegion: Rect?) {}
+        open fun recomputePadding(targetRegion: VRect) {}
     }
 
     inner class LargeClockFaceController(
@@ -177,28 +172,19 @@ class LMOClockController(
         messageBuffer: MessageBuffer?,
     ) : DefaultClockFaceController(view, seedColor, messageBuffer) {
         override val layout = SimpleClockFaceLayout(view, true)
-        override val config = ClockFaceConfig(hasCustomPositionUpdatedAnimation = true)
+        // Per-glyph stepping used TextAnimator.glyphFilter (removed in Android 17). Use SysUI's
+        // default position transition; LMO clocks are single TextViews, not per-digit Flex layers.
+        override val config = ClockFaceConfig(hasCustomPositionUpdatedAnimation = false)
 
         init {
-            view.hasCustomPositionUpdatedAnimation = true
+            view.hasCustomPositionUpdatedAnimation = false
             animations = LargeClockAnimations(view, 0f, 0f)
         }
 
-        override fun recomputePadding(targetRegion: Rect?) {}
-
-        /** See documentation at [AnimatableClockView.offsetGlyphsForStepClockAnimation]. */
-        fun offsetGlyphsForStepClockAnimation(fromLeft: Int, direction: Int, fraction: Float) {
-            view.offsetGlyphsForStepClockAnimation(fromLeft, direction, fraction)
-        }
-
-        fun offsetGlyphsForStepClockAnimation(distance: Float, fraction: Float) {
-            view.offsetGlyphsForStepClockAnimation(distance, fraction)
-        }
+        override fun recomputePadding(targetRegion: VRect) {}
     }
 
     inner class DefaultClockEvents : ClockEvents {
-        override var isReactiveTouchInteractionEnabled: Boolean = false
-
         override fun onTimeFormatChanged(formatKind: TimeFormatKind) =
             clocks.forEach { it.refreshFormat(formatKind == TimeFormatKind.FULL_DAY) }
 
@@ -282,9 +268,8 @@ class LMOClockController(
         dozeFraction: Float,
         foldFraction: Float,
     ) : DefaultClockAnimations(view, dozeFraction, foldFraction) {
-        override fun onPositionAnimated(args: ClockPositionAnimationArgs) {
-            largeClock.offsetGlyphsForStepClockAnimation(args.fromLeft, args.direction, args.fraction)
-        }
+        // No-op: hasCustomPositionUpdatedAnimation is false for LMO clocks on Android 17+.
+        override fun onPositionAnimated(args: ClockPositionAnimationArgs) {}
     }
 
     class AnimationState(var fraction: Float) {
@@ -309,62 +294,6 @@ class LMOClockController(
 
         pw.print("largeClock=")
         largeClock.view.dump(pw)
-    }
-
-    private fun getClockName(): String {
-        return when(clockId) {
-            ALBERT_SANS_CLOCK_ID -> ctx.getString(R.string.clock_albert_sans_name)
-            BLAKA_CLOCK_ID -> ctx.getString(R.string.clock_blaka_name)
-            CREEPSTER_CLOCK_ID -> ctx.getString(R.string.clock_creepster_name)
-            KABLAMMO_CLOCK_ID -> ctx.getString(R.string.clock_kablammo_name)
-            MODAK_CLOCK_ID -> ctx.getString(R.string.clock_modak_name)
-            MYSTERY_QUEST_CLOCK_ID -> ctx.getString(R.string.clock_mystery_quest_name)
-            RUBIK_DIRT_CLOCK_ID -> ctx.getString(R.string.clock_rubik_dirt_name)
-            RUBIK_DISTRESSED_CLOCK_ID -> ctx.getString(R.string.clock_rubik_distressed_name)
-            RUBIK_GEMSTONES_CLOCK_ID -> ctx.getString(R.string.clock_rubik_gemstones_name)
-            RUBIK_MARKER_HATCH_CLOCK_ID -> ctx.getString(R.string.clock_rubik_marker_hatch_name)
-            SUBWAY_CLOCK_ID -> ctx.getString(R.string.clock_subway_name)
-            RIDGE_CLOCK_ID -> ctx.getString(R.string.clock_ridge_name)
-            BEAUTY_CLOCK_ID -> ctx.getString(R.string.clock_beauty_name)
-            SFPRO_CLOCK_ID -> ctx.getString(R.string.clock_sfpro_name)
-            SPACEGAME_CLOCK_ID -> ctx.getString(R.string.clock_spacegame_name)
-            ACCURATIST_CLOCK_ID -> ctx.getString(R.string.clock_accuratist_name)
-            NOTHINGDOT_CLOCK_ID -> ctx.getString(R.string.clock_nothingdot_name)
-            ASIMOVIAN_CLOCK_ID -> ctx.getString(R.string.clock_asimovian_name)
-            CABINSKETCH_CLOCK_ID -> ctx.getString(R.string.clock_cabinsketch_name)
-            INDIEFLOWER_CLOCK_ID -> ctx.getString(R.string.clock_indieflower_name)
-            SPECIALELITE_CLOCK_ID -> ctx.getString(R.string.clock_specialelite_name)
-            DEADJIM_CLOCK_ID -> ctx.getString(R.string.clock_deadjim_name)
-            else -> ""
-        }
-    }
-
-    private fun getClockDescription(): String {
-        return when(clockId) {
-            ALBERT_SANS_CLOCK_ID -> ctx.getString(R.string.clock_albert_sans_description)
-            BLAKA_CLOCK_ID -> ctx.getString(R.string.clock_blaka_description)
-            CREEPSTER_CLOCK_ID -> ctx.getString(R.string.clock_creepster_description)
-            KABLAMMO_CLOCK_ID -> ctx.getString(R.string.clock_kablammo_description)
-            MODAK_CLOCK_ID -> ctx.getString(R.string.clock_modak_description)
-            MYSTERY_QUEST_CLOCK_ID -> ctx.getString(R.string.clock_mystery_quest_description)
-            RUBIK_DIRT_CLOCK_ID -> ctx.getString(R.string.clock_rubik_dirt_description)
-            RUBIK_DISTRESSED_CLOCK_ID -> ctx.getString(R.string.clock_rubik_distressed_description)
-            RUBIK_GEMSTONES_CLOCK_ID -> ctx.getString(R.string.clock_rubik_gemstones_description)
-            RUBIK_MARKER_HATCH_CLOCK_ID -> ctx.getString(R.string.clock_rubik_marker_hatch_description)
-            SUBWAY_CLOCK_ID -> ctx.getString(R.string.clock_subway_description)
-            RIDGE_CLOCK_ID -> ctx.getString(R.string.clock_ridge_description)
-            BEAUTY_CLOCK_ID -> ctx.getString(R.string.clock_beauty_description)
-            SFPRO_CLOCK_ID -> ctx.getString(R.string.clock_sfpro_description)
-            SPACEGAME_CLOCK_ID -> ctx.getString(R.string.clock_spacegame_description)
-            ACCURATIST_CLOCK_ID -> ctx.getString(R.string.clock_accuratist_description)
-            NOTHINGDOT_CLOCK_ID -> ctx.getString(R.string.clock_nothingdot_description)
-            ASIMOVIAN_CLOCK_ID -> ctx.getString(R.string.clock_asimovian_description)
-            CABINSKETCH_CLOCK_ID -> ctx.getString(R.string.clock_cabinsketch_description)
-            INDIEFLOWER_CLOCK_ID -> ctx.getString(R.string.clock_indieflower_description)
-            SPECIALELITE_CLOCK_ID -> ctx.getString(R.string.clock_specialelite_description)
-            DEADJIM_CLOCK_ID -> ctx.getString(R.string.clock_deadjim_description)
-            else -> ""
-        }
     }
 
     companion object {

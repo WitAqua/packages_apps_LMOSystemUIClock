@@ -27,53 +27,7 @@ import com.android.systemui.plugins.keyguard.ui.clocks.ClockSettings
 
 private val TAG = LMOClockProvider::class.simpleName
 
-const val ALBERT_SANS_CLOCK_ID = "AlbertSansClock"
-const val BLAKA_CLOCK_ID = "BlakaClock"
-const val CREEPSTER_CLOCK_ID = "CreepsterClock"
-const val KABLAMMO_CLOCK_ID = "KablammoClock"
-const val MODAK_CLOCK_ID = "ModakClock"
-const val MYSTERY_QUEST_CLOCK_ID = "MysteryQuestClock"
-const val RUBIK_DIRT_CLOCK_ID = "RubikDirtClock"
-const val RUBIK_DISTRESSED_CLOCK_ID = "RubikDistressedClock"
-const val RUBIK_GEMSTONES_CLOCK_ID = "RubikGemstonesClock"
-const val RUBIK_MARKER_HATCH_CLOCK_ID = "RubikMarkerHatchClock"
-const val SUBWAY_CLOCK_ID = "SubwayClock"
-const val RIDGE_CLOCK_ID = "RidgeClock"
-const val BEAUTY_CLOCK_ID = "BeautyClock"
-const val SFPRO_CLOCK_ID = "SFProClock"
-const val SPACEGAME_CLOCK_ID = "SpaceGameClock"
-const val ACCURATIST_CLOCK_ID = "AccuratistClock"
-const val NOTHINGDOT_CLOCK_ID = "NothingDotClock"
-const val ASIMOVIAN_CLOCK_ID = "AsimovianClock"
-const val CABINSKETCH_CLOCK_ID = "CabinSketchClock"
-const val INDIEFLOWER_CLOCK_ID = "IndieFlowerClock"
-const val SPECIALELITE_CLOCK_ID = "SpecialEliteClock"
-const val DEADJIM_CLOCK_ID = "DeadJimClock"
-
-val LMO_CLOCKS = listOf(
-    ALBERT_SANS_CLOCK_ID,
-    BLAKA_CLOCK_ID,
-    CREEPSTER_CLOCK_ID,
-    KABLAMMO_CLOCK_ID,
-    MODAK_CLOCK_ID,
-    MYSTERY_QUEST_CLOCK_ID,
-    RUBIK_DIRT_CLOCK_ID,
-    RUBIK_DISTRESSED_CLOCK_ID,
-    RUBIK_GEMSTONES_CLOCK_ID,
-    RUBIK_MARKER_HATCH_CLOCK_ID,
-    SUBWAY_CLOCK_ID,
-    RIDGE_CLOCK_ID,
-    BEAUTY_CLOCK_ID,
-    SFPRO_CLOCK_ID,
-    SPACEGAME_CLOCK_ID,
-    ACCURATIST_CLOCK_ID,
-    NOTHINGDOT_CLOCK_ID,
-    ASIMOVIAN_CLOCK_ID,
-    CABINSKETCH_CLOCK_ID,
-    INDIEFLOWER_CLOCK_ID,
-    SPECIALELITE_CLOCK_ID,
-    DEADJIM_CLOCK_ID,
-)
+val LMO_CLOCKS = LMOClockCatalog.clockIds
 
 @Requires(target = ClockProviderPlugin::class, version = ClockProviderPlugin.VERSION)
 class LMOClockProvider : ClockProviderPlugin {
@@ -118,16 +72,13 @@ class LMOClockProvider : ClockProviderPlugin {
             throw IllegalArgumentException("${settings.clockId} is unsupported by $TAG")
         }
 
-        val thumbnail = generateThumbnail(clockId, pluginContext)
-
-        // TODO: Check where it's used and fix it correctly
-        //       with proper clock names and description.
-        //       right now, plugin is broken when using plugin resources.
+        // Pass already-resolved strings (not resource IDs). SysUI cannot load plugin R.string.*
+        // from its own package context, but String values from the plugin context are fine.
         return ClockPickerConfig(
             id = clockId,
-            name = "Default clock",
-            description = "Default clock description",
-            thumbnail = thumbnail,
+            name = LMOClockCatalog.name(pluginContext, clockId),
+            description = LMOClockCatalog.description(pluginContext, clockId),
+            thumbnail = generateThumbnail(clockId, pluginContext),
             isReactiveToTone = true,
             axes = emptyList(),
             presetConfig = null,
@@ -146,8 +97,8 @@ class LMOClockProvider : ClockProviderPlugin {
 
         canvas.drawColor(0x00000000)
 
-        val fontResId = selectFont(clockId)
-        val typeface = ResourcesCompat.getFont(context, fontResId) ?: Typeface.DEFAULT
+        val typeface =
+            ResourcesCompat.getFont(context, LMOClockCatalog.font(clockId)) ?: Typeface.DEFAULT
 
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             this.typeface = typeface
@@ -175,31 +126,4 @@ class LMOClockProvider : ClockProviderPlugin {
         return BitmapDrawable(context.resources, bitmap)
     }
 
-    private fun selectFont(clockId: String): Int {
-        return when(clockId) {
-            ALBERT_SANS_CLOCK_ID -> R.font.albertsans
-            BLAKA_CLOCK_ID -> R.font.blaka
-            CREEPSTER_CLOCK_ID -> R.font.creepster
-            KABLAMMO_CLOCK_ID -> R.font.kablammo
-            MODAK_CLOCK_ID -> R.font.modak
-            MYSTERY_QUEST_CLOCK_ID -> R.font.mysteryquest
-            RUBIK_DIRT_CLOCK_ID -> R.font.rubikdirt
-            RUBIK_DISTRESSED_CLOCK_ID -> R.font.rubikdistressed
-            RUBIK_GEMSTONES_CLOCK_ID -> R.font.rubikgemstones
-            RUBIK_MARKER_HATCH_CLOCK_ID -> R.font.rubikmarkerhatch
-            SUBWAY_CLOCK_ID -> R.font.subway
-            RIDGE_CLOCK_ID -> R.font.ridge
-            BEAUTY_CLOCK_ID -> R.font.beauty
-            SFPRO_CLOCK_ID -> R.font.sfpro_semibold_rounded
-            SPACEGAME_CLOCK_ID -> R.font.spacegame
-            ACCURATIST_CLOCK_ID -> R.font.accuratist
-            NOTHINGDOT_CLOCK_ID -> R.font.nothingdot
-            ASIMOVIAN_CLOCK_ID -> R.font.asimovian
-            CABINSKETCH_CLOCK_ID -> R.font.cabinsketch
-            INDIEFLOWER_CLOCK_ID -> R.font.indieflower
-            SPECIALELITE_CLOCK_ID -> R.font.specialelite
-            DEADJIM_CLOCK_ID -> R.font.deadjim
-            else -> R.font.modak
-        }
-    }
 }

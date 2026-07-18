@@ -1,6 +1,7 @@
 /*
  * SPDX-FileCopyrightText: 2021 The Android Open Source Project
  * SPDX-FileCopyrightText: 2024-2025 The LibreMobileOS Foundation
+ * SPDX-FileCopyrightText: DerpFest AOSP
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -27,7 +28,7 @@ import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
 import com.android.app.animation.Interpolators
 import com.android.internal.annotations.VisibleForTesting
-import com.android.systemui.animation.GlyphCallback
+import com.android.systemui.animation.GSFAxes
 import com.android.systemui.animation.TextAnimator
 import com.android.systemui.animation.TextAnimatorListener
 import com.android.systemui.animation.TypefaceVariantCacheImpl
@@ -438,13 +439,6 @@ constructor(
     // Whether the currently playing animation needed a stop (and thus, is shortened).
     private var currentAnimationNeededStop = false
 
-    private val glyphFilter: GlyphCallback = { positionedGlyph, _ ->
-        val offset = positionedGlyph.lineNo * DIGITS_PER_LINE + positionedGlyph.glyphIndex
-        if (offset < glyphOffsets.size) {
-            positionedGlyph.x += glyphOffsets[offset]
-        }
-    }
-
     /**
      * Set text style with an optional animation.
      * - By passing -1 to weight, the view preserves its current weight.
@@ -464,7 +458,13 @@ constructor(
         delay: Long,
         onAnimationEnd: Runnable?,
     ) {
-        val style = TextAnimator.Style(color = color)
+        // Most LMO fonts are static. TextAnimator drops unsupported axes, so weight fVar is a
+        // no-op there; color animation still runs. Kablammo is variable and can animate weight.
+        val style =
+            TextAnimator.Style(
+                fVar = if (weight >= 0) "'${GSFAxes.WEIGHT.tag}' $weight" else null,
+                color = color,
+            )
         val animation =
             TextAnimator.Animation(
                 animate = animate && isAnimationEnabled,
@@ -473,21 +473,11 @@ constructor(
                 startDelay = delay,
                 onAnimationEnd = onAnimationEnd,
             )
-        textAnimator?.let {
-            it.setTextStyle(
-                style.withUpdatedFVar(it.fontVariationUtils, weight = weight),
-                animation,
-            )
-            it.glyphFilter = glyphFilter
-        }
+        textAnimator?.let { it.setTextStyle(style, animation) }
             ?: run {
                 // when the text animator is set, update its start values
                 onTextAnimatorInitialized = { textAnimator ->
-                    textAnimator.setTextStyle(
-                        style.withUpdatedFVar(textAnimator.fontVariationUtils, weight = weight),
-                        animation.copy(animate = false),
-                    )
-                    textAnimator.glyphFilter = glyphFilter
+                    textAnimator.setTextStyle(style, animation.copy(animate = false))
                 }
             }
     }
@@ -671,7 +661,6 @@ constructor(
         // move from 0.0 - 0.7, digit 1 from 0.1 - 0.8, digit 2 from 0.2 - 0.9, and digit 3
         // from 0.3 - 1.0.
         private const val NUM_DIGITS = 4
-        private const val DIGITS_PER_LINE = 2
 
         // Delays. Each digit's animation should have a slight delay, so we get a nice
         // "stepping" effect. When moving right, the second digit of the hour should move first.
@@ -703,7 +692,7 @@ constructor(
                 gravity = Gravity.CENTER_HORIZONTAL
                 textAlignment = TEXT_ALIGNMENT_CENTER
                 textSize = resources.getDimension(R.dimen.large_clock_text_size)
-                typeface = ResourcesCompat.getFont(context, selectFont(clockId))
+                typeface = ResourcesCompat.getFont(context, LMOClockCatalog.font(clockId))
                 includeFontPadding = false
                 fontFeatureSettings = "tnum"
                 isElegantTextHeight = false
@@ -724,7 +713,7 @@ constructor(
                 gravity = Gravity.START
                 textAlignment = TEXT_ALIGNMENT_CENTER
                 textSize = resources.getDimension(R.dimen.small_clock_text_size)
-                typeface = ResourcesCompat.getFont(context, selectFont(clockId))
+                typeface = ResourcesCompat.getFont(context, LMOClockCatalog.font(clockId))
                 isElegantTextHeight = false
                 fontFeatureSettings = "pnum"
                 includeFontPadding = false
@@ -732,45 +721,6 @@ constructor(
                 chargeAnimationDelay = 350
                 dozingWeightInternal = 200
                 lockScreenWeightInternal = 400
-            }
-        }
-
-        private fun selectFont(clockId: String): Int {
-            return when(clockId) {
-                ALBERT_SANS_CLOCK_ID -> R.font.albertsans
-                BLAKA_CLOCK_ID -> R.font.blaka
-                CREEPSTER_CLOCK_ID -> R.font.creepster
-                KABLAMMO_CLOCK_ID -> R.font.kablammo
-                MODAK_CLOCK_ID -> R.font.modak
-                MYSTERY_QUEST_CLOCK_ID -> R.font.mysteryquest
-                RUBIK_DIRT_CLOCK_ID -> R.font.rubikdirt
-                RUBIK_DISTRESSED_CLOCK_ID -> R.font.rubikdistressed
-                RUBIK_GEMSTONES_CLOCK_ID -> R.font.rubikgemstones
-                RUBIK_MARKER_HATCH_CLOCK_ID -> R.font.rubikmarkerhatch
-                SUBWAY_CLOCK_ID -> R.font.subway
-                RIDGE_CLOCK_ID -> R.font.ridge
-                BEAUTY_CLOCK_ID -> R.font.beauty
-                SFPRO_CLOCK_ID -> R.font.sfpro_semibold_rounded
-                SPACEGAME_CLOCK_ID -> R.font.spacegame
-                ACCURATIST_CLOCK_ID -> R.font.accuratist
-                NOTHINGDOT_CLOCK_ID -> R.font.nothingdot
-                ASIMOVIAN_CLOCK_ID -> R.font.asimovian
-                CABINSKETCH_CLOCK_ID -> R.font.cabinsketch
-                INDIEFLOWER_CLOCK_ID -> R.font.indieflower
-                SPECIALELITE_CLOCK_ID -> R.font.specialelite
-                DEADJIM_CLOCK_ID -> R.font.deadjim
-                else -> R.font.modak // Default fallback
-            }
-        }
-
-        fun getLineSpaceByClockId(clockId: String): Int {
-            return when(clockId) {
-                BLAKA_CLOCK_ID -> R.dimen.keyguard_clock_line_spacing_scale_blaka
-                MODAK_CLOCK_ID -> R.dimen.keyguard_clock_line_spacing_scale_modak
-                SFPRO_CLOCK_ID -> R.dimen.keyguard_clock_line_spacing_scale_sfpro
-                SUBWAY_CLOCK_ID -> R.dimen.keyguard_clock_line_spacing_scale_subway
-                NOTHINGDOT_CLOCK_ID -> R.dimen.keyguard_clock_line_spacing_scale_nothingdot
-                else -> R.dimen.keyguard_clock_line_spacing_scale
             }
         }
     }
