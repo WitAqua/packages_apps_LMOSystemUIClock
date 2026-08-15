@@ -9,7 +9,6 @@ import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import android.widget.TextView
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -60,18 +59,26 @@ class SimpleClockFaceLayout(
 
         @Composable
         override fun LockscreenScope<MovableElementContentScope>.LockscreenElement() {
-            (view as? TextView)?.let { textView ->
-                // Compose hands out AT_MOST constraints that are too tight while the shade is
-                // animating, which would otherwise wrap the time onto a second line.
-                textView.setSingleLine()
-                // Digits are directionally weak, so the time must be pinned to LTR instead of
-                // following the locale default.
-                textView.textDirection = View.TEXT_DIRECTION_LTR
-            }
+            // Override the default View.TEXT_DIRECTION_FIRST_STRONG, since the time only contains
+            // numbers and special characters, which are directionally weak. This means the Unicode
+            // Bidirectional Algorithm would fall back to the locale default direction, yet the time
+            // should always have LTR directionality.
+            view.textDirection = View.TEXT_DIRECTION_LTR
 
             ClockView(
                 view,
-                Modifier.wrapContentWidth()
+                // Compose hands out AT_MOST widths that are too tight while the scene transition
+                // layout animates this element, which would otherwise wrap the time onto a second
+                // line. Measuring unbounded keeps it on a single line and lets the time overflow
+                // the slot instead. AnimatableClockView cannot use setSingleLine() for this: that
+                // turns on horizontal scrolling, which lays the text out into a VERY_WIDE (1M px)
+                // Layout, and since the clock is always center aligned the time would then be
+                // drawn half a million pixels off screen.
+                //
+                // Compose is served by SystemUI at runtime, where R8 has already stripped every
+                // entry point SystemUI itself does not call. Only the default argument bridge of
+                // wrapContentWidth() survives there, so the alignment cannot be passed explicitly.
+                Modifier.wrapContentWidth(unbounded = true)
                     .fillMaxHeight()
                     .burnInAware(isClock = true)
                     .nonAuthUI(),
