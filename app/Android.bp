@@ -19,6 +19,11 @@ android_app {
     static_libs: [
         "SystemUISharedLib",
     ],
+    // Required to compile the @Composable lockscreen elements. Compose itself stays compile-only:
+    // SystemUI serves those classes to plugins at runtime, see PluginInstance.FILTERED_PACKAGES.
+    kotlin_plugins: [
+        "kotlin-compose-compiler-plugin",
+    ],
     certificate: "platform",
     optimize: {
         enabled: false,
