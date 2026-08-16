@@ -83,7 +83,7 @@ constructor(
     private var chargeAnimationDelay: Int
     private var textAnimator: TextAnimator? = null
     private var onTextAnimatorInitialized: ((TextAnimator) -> Unit)? = null
-    private var lastTextForAnimator: CharSequence? = null
+    private var lastLayoutForAnimator: Layout? = null
     private var lastTextSize: Float = 0f
 
     private var translateForCenterAnimation = false
@@ -211,11 +211,11 @@ constructor(
         if (layout != null) {
             textAnimator?.updateLayout(layout)
             logger.d("refreshTime: done updating textAnimator layout")
-            lastTextForAnimator = formattedText
+            lastLayoutForAnimator = layout
             lastTextSize = textSize
         } else {
-            // Reset text tracking so onMeasure() will update the textAnimator when layout becomes available
-            lastTextForAnimator = null
+            // Reset layout tracking so onMeasure() will update the textAnimator when layout becomes available
+            lastLayoutForAnimator = null
         }
 
         requestLayout()
@@ -245,11 +245,15 @@ constructor(
 
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         textAnimator?.let { animator ->
-            // Only update layout if text content or text size actually changed to avoid unnecessary invalidates
-            val currentText = text
-            if (!TextUtils.equals(currentText, lastTextForAnimator) || textSize != lastTextSize) {
+            // Track the layout itself rather than the text, since onDraw() renders through the
+            // animator and never falls back to the layout TextView measured. Setting a longer time
+            // makes TextView build a layout at the width of the previous time first, wrapping the
+            // last digit onto a second line, and only the measure pass that follows replaces it
+            // with a correctly sized one. Comparing the text would consider both layouts equal and
+            // leave the animator drawing the wrapped one until the time changes again.
+            if (layout !== lastLayoutForAnimator || textSize != lastTextSize) {
                 animator.updateLayout(layout, textSize)
-                lastTextForAnimator = currentText
+                lastLayoutForAnimator = layout
                 lastTextSize = textSize
             }
         }
@@ -259,7 +263,7 @@ constructor(
                         onTextAnimatorInitialized?.invoke(it)
                         onTextAnimatorInitialized = null
                     }
-                lastTextForAnimator = text
+                lastLayoutForAnimator = layout
                 lastTextSize = textSize
             }
 
